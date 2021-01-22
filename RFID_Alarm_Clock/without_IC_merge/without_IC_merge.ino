@@ -1,3 +1,4 @@
+
 //Includes of the library
 #include <SPI.h>
 #include <MFRC522.h>
@@ -98,14 +99,8 @@
 #define SS_PIN 53
 #define RST_PIN 5
 #define melodyPin 6
-#define led_pin 12
+#define led_pin 13
 int IR_receiver = 11;
-
-//int latchPin = 27; //9; 
-//int clockPin = 25; //10;
-//int dataPin = 23; //8; 
-//int digitPin[] = {7, 4, 3, 2};
-//int digitPin[] = {22, 24, 26, 28};
 
 //pins for decimal point and each segment
 //dp, G, F, E, D, C, B, A
@@ -266,14 +261,7 @@ void setup() {
   irrecv.enableIRIn(); // Start the IR_receiver
   Serial.println("Setup complete");
   Serial.println("Use your remote to set the alarm"); 
-  //Display
-//  pinMode(latchPin, OUTPUT);
-//  pinMode(clockPin, OUTPUT);
-//  pinMode(dataPin, OUTPUT);
-//  for (int i = 0; i < 4; i++) {
-//    pinMode(digitPin[i], OUTPUT);
-//  }
-  //Display(hrs,mins);
+  
   for (int i=0; i < 8; i++)
 pinMode(segmentPins[i], OUTPUT); //set segment and DP pins to output
 
@@ -360,7 +348,6 @@ void loop() {
     Serial.println(mins);
     final=timeToNum(hrs,mins);
     Display(final);
-//    Display(hrs,mins);
     irrecv.resume(); // receive the next value
     
   }
