@@ -1,5 +1,6 @@
 
-//Includes of the library
+//Includes of the library if you code does not compile include the libraries given in library folder.
+
 #include <SPI.h>
 #include <MFRC522.h>
 #include "IRremote.h"
@@ -96,13 +97,15 @@
 #define NOTE_DS8 4978
 #define REST      0
 
+// Pins for RFID
 #define SS_PIN 53
 #define RST_PIN 5
+
+// Pin for passive buzzer
 #define melodyPin 6
 #define led_pin 13
-int IR_receiver = 11;
 
-//pins for decimal point and each segment
+//pins for decimal point and each segment of display
 //dp, G, F, E, D, C, B, A
 const int segmentPins[]= { 37, 36, 35, 34, 33, 32, 31, 30};
 
@@ -110,10 +113,10 @@ const int numberofDigits=4;
 
 const int digitPins[numberofDigits] = { 22, 23, 24, 25}; //digits 1, 2, 3, 4
 
-
 int brightness = 90;
 
 // Pins of IR reciever
+int IR_receiver = 11;
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 IRrecv irrecv(IR_receiver);     // create instance of 'irrecv'
 decode_results results;      // create instance of 'decode_results'
@@ -215,7 +218,7 @@ int tempo[] = {
 
 byte digitArray[] = {0x00, 0x00,0x00,0x00};
 
-const int numeral[11]= {
+const int numeral[13]= {
 B11111100, //0
 B01100000, //1
 B11011010, //2
@@ -227,6 +230,8 @@ B11100000, //7
 B11111110, //8
 B11100110, //9
 B00000010,  //dash
+B01101110, //H
+B00000001 //dot
 };
 
 int time_left=10;
@@ -337,7 +342,6 @@ void loop() {
              }
        }
       irrecv.resume(); // receive the next value
-//      results.value=0xF00000;
       }
     else {
       Serial.println("Hit power button to set the time and stop button the on the timer");
@@ -351,8 +355,6 @@ void loop() {
     irrecv.resume(); // receive the next value
     
   }
-//  irrecv.resume(); // receive the next value  
-
 }
 
 void sing() {
@@ -400,6 +402,7 @@ void buzz(int targetPin, long frequency, long length) {
 
 void check_rfid() {
    // Look for new cards
+   showFour(11,1,12,12);
   if ( ! mfrc522.PICC_IsNewCardPresent()) 
   {
     return;
@@ -422,10 +425,12 @@ void check_rfid() {
   }
   
   Serial.println();
-  Serial.print("Message : ");
   content.toUpperCase();
-  if (content.substring(1) == "7A 89 84 80") //change here the UID of the card/cards that you want to give access
-  {
+//  if (content.substring(1) == "7A 89 84 80") // Change here the UID of the card/cards that you want to give access
+                                               // Run identify_tag.ino in order to get the ID of your RFID and update the if loop.
+                                               // Then also update else to get output of wrong card. 
+                                               
+//  {
     Serial.println("Good Morning !!! Have a good Day");
     Serial.println();
     hrs=set_hrs;
@@ -433,12 +438,12 @@ void check_rfid() {
     time_left=hrs*60+mins;
     woke_up=true;
     delay(3000);
-  }
+//  }
 
-  else {
-    Serial.println(" Wrong Card");
-    delay(3000);
-  }
+//  else {
+//    Serial.println(" Wrong Card");
+//    delay(3000);
+//  }
 }
 
 void translateIR() {
