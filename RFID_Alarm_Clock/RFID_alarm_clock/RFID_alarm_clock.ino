@@ -104,15 +104,13 @@
 // Pin for passive buzzer
 #define melodyPin 6
 #define led_pin 13
+int song_speed = 2; // change the speed of alarm song
 
 //pins for decimal point and each segment of display
 //dp, G, F, E, D, C, B, A
 const int segmentPins[]= { 37, 36, 35, 34, 33, 32, 31, 30};
-
 const int numberofDigits=4;
-
 const int digitPins[numberofDigits] = { 22, 23, 24, 25}; //digits 1, 2, 3, 4
-
 int brightness = 90;
 
 // Pins of IR reciever
@@ -122,6 +120,7 @@ IRrecv irrecv(IR_receiver);     // create instance of 'irrecv'
 decode_results results;      // create instance of 'decode_results'
 
 //Mario main theme melody
+
 int melody[] = {
   NOTE_E7, NOTE_E7, 0, NOTE_E7,
   0, NOTE_C7, NOTE_E7, 0,
@@ -216,7 +215,17 @@ int tempo[] = {
   3, 3, 3
 };
 
+//https://github.com/robsoncouto/arduino-songs
+// If you want to change the alarm tone go to above page and chose your favourite.
+
+
 byte digitArray[] = {0x00, 0x00,0x00,0x00};
+
+//   A
+// F   B
+//   G
+// E   C
+//   D   .dp
 
 const int numeral[13]= {
 B11111100, //0
@@ -231,7 +240,7 @@ B11111110, //8
 B11100110, //9
 B00000010,  //dash
 B01101110, //H
-B00000001 //dot
+B00010000 //dash_low
 };
 
 int time_left=10;
@@ -243,7 +252,7 @@ int mins_tens=0;
 int hrs=0;
 int mins=0;
 int set_hrs=0;
-int set_mins=20;
+int set_mins=0;
 bool pause=false;
 bool woke_up=false;
 int dig1=0;
@@ -264,20 +273,22 @@ void setup() {
   pinMode(melodyPin, OUTPUT);//buzzer
   pinMode(led_pin, OUTPUT);//led indicator when singing a note
   irrecv.enableIRIn(); // Start the IR_receiver
-  Serial.println("Setup complete");
-  Serial.println("Use your remote to set the alarm"); 
   
   for (int i=0; i < 8; i++)
-pinMode(segmentPins[i], OUTPUT); //set segment and DP pins to output
+    pinMode(segmentPins[i], OUTPUT); //set segment and DP pins to output
 
-//sets the digit pins as outputs
-for (int i=0; i < numberofDigits; i++)
-pinMode(digitPins[i], OUTPUT);
-}
+  //sets the digit pins as outputs
+  for (int i=0; i < numberofDigits; i++)
+    pinMode(digitPins[i], OUTPUT);
+
+  Serial.println("Setup complete");
+  Serial.println("Use your remote to set the alarm"); 
+  }
 
 void loop() {
   final=timeToNum(set_hrs,set_mins);
   Display_once(final);
+
   if (irrecv.decode(&results)) // have we received an IR signal?
   {
   translateIR();
@@ -295,7 +306,7 @@ void loop() {
     set_mins = mins_tens*10 + mins_units;
     final=timeToNum(set_hrs,set_mins);
     
-    Display(final);
+    Display_once(final);
     
     if (set_mins >59){
       set_mins=59;
@@ -315,6 +326,8 @@ void loop() {
             if (time_left>0){
              Serial.print("Time left : ");
              Serial.println(time_left);
+             final=timeToNum(hrs,mins);
+             Display(final);
              mins=mins-1;
              if (mins<=0 && hrs>0 ){
                  mins=59;
@@ -328,8 +341,6 @@ void loop() {
                 break;
                 }
               }
-              final=timeToNum(hrs,mins);
-              Display(final);
              irrecv.resume(); // receive the next value
              continue;
              
@@ -344,14 +355,14 @@ void loop() {
       irrecv.resume(); // receive the next value
       }
     else {
-      Serial.println("Hit power button to set the time and stop button the on the timer");
+      Serial.println("Hit power button to set the time and stop button to ON the timer");
     }
     Serial.print("Current timer is at ");
     Serial.print(hrs);
     Serial.print(":");
     Serial.println(mins);
     final=timeToNum(hrs,mins);
-    Display(final);
+    Display_once(final);
     irrecv.resume(); // receive the next value
     
   }
@@ -365,10 +376,9 @@ void sing() {
     if (time_left>0){
     return;
     }
-    // to calculate the note duration, take one second
-    // divided by the note type.
+    // to calculate the note duration, take one second divided by the note type.
     //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
-    int noteDuration = 1000 / tempo[thisNote];
+    int noteDuration = 1000 / (tempo[thisNote]*song_speed);
 
     buzz(melodyPin, melody[thisNote], noteDuration);
 
@@ -383,7 +393,7 @@ void sing() {
 }
 
 void buzz(int targetPin, long frequency, long length) {
-  digitalWrite(13, HIGH);
+  digitalWrite(led_pin, HIGH);
   long delayValue = 1000000 / frequency / 2; // calculate the delay value between transitions
   //// 1 second's worth of microseconds, divided by the frequency, then split in half since
   //// there are two phases to each cycle
@@ -396,13 +406,13 @@ void buzz(int targetPin, long frequency, long length) {
     digitalWrite(targetPin, LOW); // write the buzzer pin low to pull back the diaphram
     delayMicroseconds(delayValue); // wait again or the calculated delay value
   }
-  digitalWrite(13, LOW);
+  digitalWrite(led_pin, LOW);
 
 }
 
 void check_rfid() {
    // Look for new cards
-   showFour(11,1,12,12);
+  showFour(11,1,12,12);
   if ( ! mfrc522.PICC_IsNewCardPresent()) 
   {
     return;
@@ -424,7 +434,6 @@ void check_rfid() {
       content.concat(String(mfrc522.uid.uidByte[i], HEX));
   }
   
-  Serial.println();
   content.toUpperCase();
 //  if (content.substring(1) == "7A 89 84 80") // Change here the UID of the card/cards that you want to give access
                                                // Run identify_tag.ino in order to get the ID of your RFID and update the if loop.
@@ -479,6 +488,28 @@ void translateIR() {
 
 }
 
+void Display (int orig_number)
+{
+  int number=0;
+  for (int i=0; i<50 ; i++){     // change value from 50 to 3000(50X60) in the for loop to convert the clock from MIN:SEC to HRS:MIN 
+    delay_corrector(orig_number);
+    number=orig_number;
+    if (number == 0)
+      showDigit (0, numberofDigits-1); //display 0 in the rightmost digit
+    else {
+      for (int digit= numberofDigits-1; digit >=0; digit--)
+      {
+        if (number > 0) {
+          showDigit(number % 10, digit);
+          number= number/10;
+        }
+      }
+  
+    }
+  }
+}
+
+
 int convert(int n1, int n2, int n3, int n4) {
   int number =-1;
   while (number==-1){
@@ -520,36 +551,31 @@ void convertToNum(int num){
   numArray[1]=b;
   }
 
-void allDash()
-{
-  for (int digit= numberofDigits-1; digit >=0; digit--)
-{
-  showDigit(10, digit);
-}
-}
-
-void Display (int orig_number)
-{
-  int number=0;
-  for (int i=0; i<100 ; i++){
-    number=orig_number;
-    if (number == 0)
-      showDigit (0, numberofDigits-1); //display 0 in the rightmost digit
-    else {
-      for (int digit= numberofDigits-1; digit >=0; digit--)
-      {
-        if (number > 0) {
-          showDigit(number % 10, digit);
-          number= number/10;
-        }
-      }
-  
-    }
+void allDash() {
+  for (int digit= numberofDigits-1; digit >=0; digit--) {
+    showDigit(10, digit);
   }
 }
 
-void Display_once (int number)
-{
+void delay_corrector(int number) {
+  if (number>999){
+    delay(0);
+    }
+   else if (number>99){
+    delay(5);
+   }
+   
+   else if (number>9) {
+    delay(10);
+   }
+   else {
+    delay(15);
+    }
+    
+  }
+
+
+void Display_once (int number) {
   if (number == 0)
     showDigit (0, numberofDigits-1); //display 0 in the rightmost digit
   else {
@@ -565,8 +591,7 @@ void Display_once (int number)
 }
 
 //Displays given number on a 7-segment display at the given digit position
-void showDigit (int number, int digit)
-{
+void showDigit (int number, int digit) {
   digitalWrite(digitPins[digit], HIGH);
   for (int segment= 1; segment < 8; segment++) {
     boolean isBitSet= bitRead(numeral[number], segment);
@@ -577,8 +602,7 @@ void showDigit (int number, int digit)
     digitalWrite(digitPins[digit], LOW);
  }
 
- void showFour (int n1,int n2,int n3,int n4)
-{
+ void showFour (int n1,int n2,int n3,int n4) {
   int fourArray[]={n1,n2,n3,n4};
   for(int i = 0; i<4; i++){
     digitalWrite(digitPins[i], HIGH);
