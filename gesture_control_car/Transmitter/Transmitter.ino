@@ -1,6 +1,3 @@
-//www.elegoo.com
-//2016.12.08
-
 #include <Wire.h>
 #include <SPI.h>
 #include <nRF24L01.h>
@@ -10,7 +7,12 @@
 
 
 RF24 radio(MY_RF24_CE_PIN, MY_RF24_CS_PIN); // CE, CSN
-const byte addresses[][6] = {"00001", "00002"};
+const byte addresses[][6] = {"00001"};
+
+float Pitch = 0;
+float Roll = 0;
+float package[2];
+
 
 int gyro_x, gyro_y, gyro_z;
 long acc_x, acc_y, acc_z, acc_total_vector;
@@ -27,11 +29,10 @@ float angle_pitch_output, angle_roll_output;
 void setup() {
     radio.begin();
     radio.openWritingPipe(addresses[0]); // 00001
-    radio.openWritingPipe(addresses[1]); // 00002
-    //  radio.setPALevel(RF24_PA_MIN);
-   Wire.begin();                                                        //Start I2C as master
-   Serial.begin(9600);                                                   //Use only for debugging
-   pinMode(LED_BUILTIN, OUTPUT);                                         //Set output 13 (LED) as output
+    radio.setPALevel(RF24_PA_MIN);
+     Wire.begin();                                                        //Start I2C as master
+     Serial.begin(9600);                                                   //Use only for debugging
+     pinMode(LED_BUILTIN, OUTPUT);                                         //Set output 13 (LED) as output
   
    setup_mpu_6050_registers();                                          //Setup the registers of the MPU-6050 (500dfs / +/-8g) and start the gyro
 
@@ -70,10 +71,12 @@ void setup() {
 
 void loop() {
 
-  delay(2000);
   get_roll_pitch();
-  radio.write(&angle_pitch_output, sizeof(angle_pitch_output));
-  radio.write(&angle_roll_output, sizeof(angle_roll_output));
+  Serial.println(angle_pitch_output);
+  Serial.println(angle_roll_output);
+  package[0]=angle_pitch_output;
+  package[1]=angle_roll_output;
+  radio.write(&package, sizeof(package));
   }
 
 void read_mpu_6050_data(){                                             //Subroutine for reading the raw gyro and accelerometer data
