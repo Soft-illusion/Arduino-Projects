@@ -7,7 +7,7 @@
 
 
 RF24 radio(MY_RF24_CE_PIN, MY_RF24_CS_PIN); // CE, CSN
-const byte addresses[][6] = {"00001"};
+const byte addresses[][6] = {"00001","00002"};
 
 float Pitch = 0;
 float Roll = 0;
@@ -29,6 +29,7 @@ float angle_pitch_output, angle_roll_output;
 void setup() {
     radio.begin();
     radio.openWritingPipe(addresses[0]); // 00001
+//    radio.setChannel(115); 
     radio.setPALevel(RF24_PA_MIN);
      Wire.begin();                                                        //Start I2C as master
      Serial.begin(9600);                                                   //Use only for debugging
@@ -72,10 +73,12 @@ void setup() {
 void loop() {
 
   get_roll_pitch();
-  Serial.println(angle_pitch_output);
-  Serial.println(angle_roll_output);
+  
   package[0]=angle_pitch_output;
   package[1]=angle_roll_output;
+  Serial.println(package[0]);
+  Serial.println(package[1]);
+  
   radio.write(&package, sizeof(package));
   }
 
