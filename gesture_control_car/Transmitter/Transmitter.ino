@@ -29,7 +29,6 @@ float angle_pitch_output, angle_roll_output;
 void setup() {
     radio.begin();
     radio.openWritingPipe(addresses[0]); // 00001
-//    radio.setChannel(115); 
     radio.setPALevel(RF24_PA_MIN);
      Wire.begin();                                                        //Start I2C as master
      Serial.begin(9600);                                                   //Use only for debugging

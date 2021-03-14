@@ -93,7 +93,7 @@ void wheel_move(float pitch,float roll) {
 //  Serial.println(roll);
   Serial.print("Distance Sensor :");
   Serial.println(a);
-  if(pitch>angle_deadband){
+  if(pitch>angle_deadband && a>DISTANCE_THRESHOLD ){
     Serial.println("in pitch >20" );
    digitalWrite(A1Out, LOW);
    digitalWrite(A2Out, HIGH);
@@ -126,10 +126,10 @@ void wheel_move(float pitch,float roll) {
     speed_writer(-roll);
   }
   else{
-   digitalWrite(A1Out, HIGH);
-   digitalWrite(A2Out, HIGH);
-   digitalWrite(B1Out, HIGH);
-   digitalWrite(B2Out, HIGH);
+   digitalWrite(A1Out, LOW);
+   digitalWrite(A2Out, LOW);
+   digitalWrite(B1Out, LOW);
+   digitalWrite(B2Out, LOW);
    speed_writer(angle_deadband);
   }  
   }
